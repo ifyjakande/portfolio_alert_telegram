@@ -1,0 +1,3 @@
+google-analytics-data
+slack-sdk
+python-dotenv
