@@ -1,11 +1,12 @@
-name: Portfolio Telegram Alert
+# .github/workflows/portfolio-monitor.yml
+name: Portfolio Monitor
 on:
   schedule:
     - cron: '0 * * * *'  # Runs every hour
   workflow_dispatch:
 
 jobs:
-  alert:
+  monitor:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,21 +15,15 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-          cache: 'pip'
-      
+          
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
           
-      - name: Send Telegram Alert
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: html
-          message: |
-            🌍 <b>Portfolio Activity Alert</b>
-            
-            Time: ${{ github.event.head_commit.timestamp }}
-            Details: Visit portfolio activity
+      - name: Run monitor script
+        env:
+          PROPERTY_ID: ${{ secrets.PROPERTY_ID }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        run: python monitor.py
