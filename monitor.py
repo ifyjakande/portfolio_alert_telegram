@@ -35,7 +35,7 @@ def setup_analytics_client():
 def get_visitors():
     client = setup_analytics_client()
     request = RunRealtimeReportRequest(
-        property=f"properties/{PROPERTY_ID}",
+        property=PROPERTY_ID,
         dimensions=[Dimension(name="country")],
         metrics=[Metric(name="activeUsers")]
     )
