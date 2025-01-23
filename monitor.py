@@ -1,6 +1,5 @@
 import os
 import logging
-import base64
 import json
 import requests
 from google.oauth2 import service_account
@@ -22,12 +21,16 @@ GOOGLE_CREDENTIALS = os.getenv('GOOGLE_CREDENTIALS')
 COUNTRIES_TO_MONITOR = ['United States', 'United Kingdom', 'Canada', 'Nigeria']
 
 def setup_analytics_client():
-    credentials_info = json.loads(base64.b64decode(GOOGLE_CREDENTIALS))
-    credentials = service_account.Credentials.from_service_account_info(
-        credentials_info,
-        scopes=['https://www.googleapis.com/auth/analytics.readonly']
-    )
-    return BetaAnalyticsDataClient(credentials=credentials)
+    try:
+        credentials_info = json.loads(GOOGLE_CREDENTIALS)
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_info,
+            scopes=['https://www.googleapis.com/auth/analytics.readonly']
+        )
+        return BetaAnalyticsDataClient(credentials=credentials)
+    except Exception as e:
+        logger.error(f"Failed to setup client: {str(e)}")
+        raise
 
 def get_visitors():
     client = setup_analytics_client()
