@@ -1,5 +1,7 @@
 import os
 import logging
+import base64
+import json
 import requests
 from google.oauth2 import service_account
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
@@ -13,33 +15,30 @@ from datetime import datetime
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Configuration
 PROPERTY_ID = os.getenv('PROPERTY_ID')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+GOOGLE_CREDENTIALS = os.getenv('GOOGLE_CREDENTIALS')
 COUNTRIES_TO_MONITOR = ['United States', 'United Kingdom', 'Canada', 'Nigeria']
 
 def setup_analytics_client():
-    logger.debug("Setting up analytics client")
-    logger.debug(f"Looking for credentials file in: {os.getcwd()}")
-    credentials = service_account.Credentials.from_service_account_file(
-        'credentials.json',
+    credentials_info = json.loads(base64.b64decode(GOOGLE_CREDENTIALS))
+    credentials = service_account.Credentials.from_service_account_info(
+        credentials_info,
         scopes=['https://www.googleapis.com/auth/analytics.readonly']
     )
     return BetaAnalyticsDataClient(credentials=credentials)
 
 def get_visitors():
-    logger.debug("Getting visitors data")
     client = setup_analytics_client()
     request = RunRealtimeReportRequest(
-        property=PROPERTY_ID,
+        property=f"properties/{PROPERTY_ID}",
         dimensions=[Dimension(name="country")],
         metrics=[Metric(name="activeUsers")]
     )
     return client.run_realtime_report(request)
 
 def process_data(report):
-    logger.debug("Processing visitor data")
     visitors = {}
     for row in report.rows:
         country = row.dimension_values[0].value
@@ -60,28 +59,21 @@ def send_telegram_message(message):
         logger.error(f"Failed to send Telegram message: {response.text}")
     return response.status_code == 200
 
-def send_notification(visitor_data):
-    logger.debug("Sending notifications")
-    if not visitor_data:
-        message = f"📊 No active visitors from monitored countries at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        logger.debug(f"Sending message: {message}")
-        send_telegram_message(message)
-    else:
-        for country, count in visitor_data.items():
-            if count > 0:
-                message = f"🌍 {count} active visitor(s) from {country} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                logger.debug(f"Sending message: {message}")
-                send_telegram_message(message)
-
 def main():
     try:
         logger.debug("Starting analytics monitor")
         report = get_visitors()
         current_visitors = process_data(report)
-        send_notification(current_visitors)
+        if not current_visitors:
+            message = f"📊 No active visitors from monitored countries at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            send_telegram_message(message)
+        else:
+            for country, count in current_visitors.items():
+                if count > 0:
+                    message = f"🌍 {count} active visitor(s) from {country} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    send_telegram_message(message)
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}", exc_info=True)
-        # Send error notification to Telegram
         send_telegram_message(f"❌ Error in analytics monitor: {str(e)}")
 
 if __name__ == "__main__":
