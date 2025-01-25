@@ -40,9 +40,10 @@ def get_analytics_data():
        dimensions=[
            Dimension(name="country"),
            Dimension(name="eventName"),
-           Dimension(name="clientId")
        ],
-       metrics=[Metric(name="uniqueEventCount")]
+       metrics=[
+           Metric(name="activeUsers"),
+           Metric(name="eventCount")
    )
    return client.run_realtime_report(request)
 
