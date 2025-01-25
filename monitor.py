@@ -19,7 +19,6 @@ PROPERTY_ID = os.getenv('PROPERTY_ID')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 GOOGLE_CREDENTIALS = os.getenv('GOOGLE_CREDENTIALS')
-COUNTRIES_TO_MONITOR = ['United States', 'United Kingdom', 'Canada', 'Nigeria']
 
 def setup_analytics_client():
     try:
@@ -61,9 +60,6 @@ def process_data(report):
         else:
             data['visitors'][country] = count
             
-    data['visitors'] = {k: v for k, v in data['visitors'].items() if k in COUNTRIES_TO_MONITOR}
-    data['downloads'] = {k: v for k, v in data['downloads'].items() if k in COUNTRIES_TO_MONITOR}
-    
     logger.debug(f"Processed data: {data}")
     return data
 
@@ -86,9 +82,12 @@ def main():
         data = process_data(report)
         
         wat = pytz.timezone('Africa/Lagos')
-        timestamp = datetime.now(wat).strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.now(wat).strftime('%Y-%m-%d %I:%M %p')
         
-        for country in COUNTRIES_TO_MONITOR:
+        # Get all unique countries from both visitors and downloads
+        all_countries = set(data['visitors'].keys()) | set(data['downloads'].keys())
+        
+        for country in all_countries:
             visitors = data['visitors'].get(country, 0)
             downloads = data['downloads'].get(country, 0)
             
