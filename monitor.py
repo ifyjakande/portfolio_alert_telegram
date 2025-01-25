@@ -39,10 +39,12 @@ def get_analytics_data():
         property=PROPERTY_ID,
         dimensions=[
             Dimension(name="country"),
-            Dimension(name="eventName"),
-            Dimension(name="streamId")  # This represents a unique user session
+            Dimension(name="eventName")
         ],
-        metrics=[Metric(name="activeUsers")]
+        metrics=[
+            Metric(name="eventCount"),
+            Metric(name="activeUsers")
+        ]
     )
     return client.run_realtime_report(request)
 
@@ -52,22 +54,14 @@ def process_data(report):
         'downloads': {}
     }
     
-    # Track unique users who downloaded per country
-    unique_downloaders = {}
-    
     for row in report.rows:
         country = row.dimension_values[0].value
         event = row.dimension_values[1].value
-        stream_id = row.dimension_values[2].value
-        active_users = int(row.metric_values[0].value)
+        event_count = int(row.metric_values[0].value)
+        active_users = int(row.metric_values[1].value)
         
         if event == 'file_download':
-            if country not in unique_downloaders:
-                unique_downloaders[country] = set()
-            
-            if active_users > 0 and stream_id:
-                unique_downloaders[country].add(stream_id)
-                data['downloads'][country] = len(unique_downloaders[country])
+            data['downloads'][country] = event_count
         else:
             data['visitors'][country] = active_users
             
