@@ -40,7 +40,7 @@ def get_analytics_data():
        dimensions=[
            Dimension(name="country"),
            Dimension(name="eventName"),
-           Dimension(name="userId")
+           Dimension(name="sessionId")
        ],
        metrics=[Metric(name="uniqueEventCount")]
    )
