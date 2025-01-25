@@ -19,6 +19,7 @@ jobs:
         run: |
           pip install google-analytics-data
           pip install requests
+          pip install pytz
           
       - name: Run monitor script
         env:
