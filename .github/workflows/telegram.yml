@@ -1,7 +1,7 @@
 name: Portfolio Monitor
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/40 * * * *'
   workflow_dispatch:
 
 jobs:
