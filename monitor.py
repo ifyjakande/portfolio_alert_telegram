@@ -10,6 +10,7 @@ from google.analytics.data_v1beta.types import (
     Metric
 )
 from datetime import datetime
+import pytz
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -84,7 +85,8 @@ def main():
         report = get_analytics_data()
         data = process_data(report)
         
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        wat = pytz.timezone('Africa/Lagos')
+        timestamp = datetime.now(wat).strftime('%Y-%m-%d %H:%M:%S')
         
         for country in COUNTRIES_TO_MONITOR:
             visitors = data['visitors'].get(country, 0)
