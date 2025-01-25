@@ -41,10 +41,7 @@ def get_analytics_data():
             Dimension(name="country"),
             Dimension(name="eventName")
         ],
-        metrics=[
-            Metric(name="eventCount"),
-            Metric(name="activeUsers")
-        ]
+        metrics=[Metric(name="eventCount")]
     )
     return client.run_realtime_report(request)
 
@@ -57,13 +54,12 @@ def process_data(report):
     for row in report.rows:
         country = row.dimension_values[0].value
         event = row.dimension_values[1].value
-        event_count = int(row.metric_values[0].value)
-        active_users = int(row.metric_values[1].value)
+        count = int(row.metric_values[0].value)
         
         if event == 'file_download':
-            data['downloads'][country] = event_count
+            data['downloads'][country] = count
         else:
-            data['visitors'][country] = active_users
+            data['visitors'][country] = count
             
     data['visitors'] = {k: v for k, v in data['visitors'].items() if k in COUNTRIES_TO_MONITOR}
     data['downloads'] = {k: v for k, v in data['downloads'].items() if k in COUNTRIES_TO_MONITOR}
@@ -101,7 +97,7 @@ def main():
                 if visitors > 0:
                     message += f"👥 {visitors} active visitor(s)\n"
                 if downloads > 0:
-                    message += f"📥 {downloads} unique download(s)"
+                    message += f"📥 {downloads} file download(s)"
                 send_telegram_message(message)
                 
     except Exception as e:
