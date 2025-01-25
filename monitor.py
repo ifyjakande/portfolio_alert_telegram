@@ -67,14 +67,13 @@ def main():
         logger.debug("Starting analytics monitor")
         report = get_visitors()
         current_visitors = process_data(report)
-        if not current_visitors:
-            message = f"📊 No active visitors from monitored countries at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            send_telegram_message(message)
-        else:
-            for country, count in current_visitors.items():
-                if count > 0:
-                    message = f"🌍 {count} active visitor(s) from {country} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                    send_telegram_message(message)
+        
+        # Only send messages for countries with active visitors
+        for country, count in current_visitors.items():
+            if count > 0:
+                message = f"🌍 {count} active visitor(s) from {country} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                send_telegram_message(message)
+                
     except Exception as e:
         logger.error(f"Error occurred: {str(e)}", exc_info=True)
         send_telegram_message(f"❌ Error in analytics monitor: {str(e)}")
