@@ -32,23 +32,39 @@ def setup_analytics_client():
         logger.error(f"Failed to setup client: {str(e)}")
         raise
 
-def get_visitors():
+def get_analytics_data():
     client = setup_analytics_client()
     request = RunRealtimeReportRequest(
         property=PROPERTY_ID,
-        dimensions=[Dimension(name="country")],
-        metrics=[Metric(name="activeUsers")]
+        dimensions=[
+            Dimension(name="country"),
+            Dimension(name="eventName")
+        ],
+        metrics=[Metric(name="eventCount")]
     )
     return client.run_realtime_report(request)
 
 def process_data(report):
-    visitors = {}
+    data = {
+        'visitors': {},
+        'downloads': {}
+    }
+    
     for row in report.rows:
         country = row.dimension_values[0].value
-        visitors[country] = int(row.metric_values[0].value)
-    filtered = {k: v for k, v in visitors.items() if k in COUNTRIES_TO_MONITOR}
-    logger.debug(f"Filtered visitor data: {filtered}")
-    return filtered
+        event = row.dimension_values[1].value
+        count = int(row.metric_values[0].value)
+        
+        if event == 'file_download':
+            data['downloads'][country] = count
+        else:
+            data['visitors'][country] = count
+            
+    data['visitors'] = {k: v for k, v in data['visitors'].items() if k in COUNTRIES_TO_MONITOR}
+    data['downloads'] = {k: v for k, v in data['downloads'].items() if k in COUNTRIES_TO_MONITOR}
+    
+    logger.debug(f"Processed data: {data}")
+    return data
 
 def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -65,13 +81,21 @@ def send_telegram_message(message):
 def main():
     try:
         logger.debug("Starting analytics monitor")
-        report = get_visitors()
-        current_visitors = process_data(report)
+        report = get_analytics_data()
+        data = process_data(report)
         
-        # Only send messages for countries with active visitors
-        for country, count in current_visitors.items():
-            if count > 0:
-                message = f"🌍 {count} active visitor(s) from {country} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        for country in COUNTRIES_TO_MONITOR:
+            visitors = data['visitors'].get(country, 0)
+            downloads = data['downloads'].get(country, 0)
+            
+            if visitors > 0 or downloads > 0:
+                message = f"🌍 {country} at {timestamp}\n"
+                if visitors > 0:
+                    message += f"👥 {visitors} active visitor(s)\n"
+                if downloads > 0:
+                    message += f"📥 {downloads} file download(s)"
                 send_telegram_message(message)
                 
     except Exception as e:
