@@ -1,2 +1,3 @@
 google-analytics-data
 requests
+packaging
